@@ -64,6 +64,27 @@ class MyGameManager(BoggleGame):
         """
         return self.board
 
+    def eight_way_search(self,used, word, coords):
+        size = self.size
+        if not word:
+            return coords
+        start_r, start_c = coords[-1]
+        next_letter = word[0]
+        for r in range(start_r - 1, start_r + 2):
+            for c in range(start_c - 1, start_c + 2):
+                if (r >= 0 and r < size and c >= 0 and c < size):
+                    if self.board[r][c] == next_letter and (r, c) not in used:
+                        new_used = used + [(r, c)]
+                        new_coords = coords + [(r, c)]
+                        if len(word) == 1:
+                            return new_coords
+                        else:
+                            result = self.eight_way_search(new_used, word[1:], new_coords)
+                            if result:
+                                return result
+
+        return None
+
     def find_word_in_board(self, word: str) -> Optional[List[Tuple[int, int]]]:
         """Helper method called by add_word()
         Expected behavior:
@@ -71,8 +92,27 @@ class MyGameManager(BoggleGame):
         (see documentation in boggle_game.py).
         If `word` is not present on the board, return None.
         """
+
+        size = self.size
+
         word = word.lower()
-        raise NotImplementedError("method find_word_in_board") # TODO: implement your code here
+        initial_coords = []
+
+        for r in range(size):
+            for c in range(size):
+                if self.board[r][c] == word[0]:
+                    initial_coords.append((r, c))
+
+        for initial_coord in initial_coords:
+            answer = self.eight_way_search([initial_coord], word[1:], [initial_coord])
+            if answer:
+                return answer
+        else:
+            return None
+
+
+        # raise NotImplementedError("method find_word_in_board") # TODO: implement your code here
+
 
     def add_word(self, word: str) -> int:
         """This method is provided for you, but feel free to change it.
@@ -110,6 +150,17 @@ class MyGameManager(BoggleGame):
         Returns:
             A set containing all words found on the board.
         """
+        dict_iterator = self.dictionary.__iter__()
+
+        dict_iterator = self.dictionary.__iter__()
+        words = []
+
+        for word in dict_iterator:
+            if self.find_word_in_board(word):
+                words.append(word)
+
+        return set(words)
+        
         raise NotImplementedError("method dictionary_driven_search") # TODO: implement your code here
 
     def board_driven_search(self) -> Set[str]:
@@ -122,4 +173,35 @@ class MyGameManager(BoggleGame):
         Returns:
             A set containing all words found on the board.
         """
-        raise NotImplementedError("method board_driven_search") # TODO: implement your code here
+
+        words = []
+        def possible_words_after_word(base_r, base_c, used, word):
+            size = self.size
+            possible_words = []
+            for r in range(base_r - 1, base_r + 2):
+                for c in range( base_c - 1,  base_c + 2):
+                    if (r >= 0 and r < size and c >= 0 and c < size):
+                        if (r, c) not in used and self.dictionary.is_prefix(word + self.board[r][c]):
+                            new_word = word + self.board[r][c]
+                            possible_words.append([r,c,used+[(r,c)],new_word])
+                            if self.dictionary.contains(new_word) and len(new_word)>3:
+                                words.append(new_word)
+            return possible_words
+
+
+        for i in range(self.size):
+            for j in range(self.size):
+                prefixes = possible_words_after_word(i, j, [(i,j)], self.board[i][j])
+                if prefixes:
+                    while True:
+                        prefix = prefixes.pop(0)
+                        next = possible_words_after_word(prefix[0], prefix[1], prefix[2], prefix[3])
+                        if next:
+                            prefixes = prefixes + next
+                        if not prefixes:
+                            break
+
+        words = set(words)
+        return words
+        
+        # raise NotImplementedError("method board_driven_search") # TODO: implement your code here
