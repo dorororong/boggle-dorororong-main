@@ -85,8 +85,12 @@ class TrieDictionary(BoggleDictionary):
     def __iter__(self) -> typing.Iterator[str]:
 
 
-        raise NotImplementedError("method __iter__") # TODO: implement your code here
-
-dic = TrieDictionary()
-dic.load_dictionary("C:/Users/sangmin/Desktop/assignment/DSA/boggle-dorororong-main/words.txt")
-# print(dic.root.children['a'].children['a'].children['b'].is_word)
+        def traverse(node, prefix):
+            if node.is_word:
+                yield prefix
+            for letter, child in node.children.items():
+                yield from traverse(child, prefix + letter)
+        if self.root is not None:
+            yield from traverse(self.root, "")
+        else:
+            return None
